@@ -13,8 +13,11 @@ import com.google.appinventor.client.explorer.project.ProjectComparators;
 import com.google.appinventor.client.explorer.project.ProjectManagerEventListener;
 
 import com.google.appinventor.client.output.OdeLog;
-import com.google.appinventor.client.GalleryApp;
+import com.google.appinventor.shared.rpc.project.GalleryApp;
+import com.google.appinventor.shared.rpc.project.GalleryComment;
 import com.google.appinventor.client.GalleryClient;
+import com.google.appinventor.client.GalleryGuiFactory;
+import com.google.appinventor.client.GalleryRequestListener;
 import com.google.appinventor.client.OdeAsyncCallback;
 
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -29,15 +32,21 @@ import com.google.gwt.http.client.RequestCallback;
 import com.google.gwt.http.client.RequestException;
 import com.google.gwt.http.client.Response;
 import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Grid;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.TabPanel;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 import com.google.gwt.user.client.ui.Image;
 
+import java.io.Console;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,238 +74,340 @@ import com.google.gwt.user.client.Window;
  *
  * @author wolberd@google.com (Dave Wolber)
  */
-public class GalleryList extends Composite {
-  private enum SortField {
-    NAME,
-    DATE,
-  }
-  private enum SortOrder {
-    ASCENDING,
-    DESCENDING,
-  }
+public class GalleryList extends Composite implements GalleryRequestListener {
+//  private enum SortField {
+//    NAME,
+//    DATE,
+//  }
+//  private enum SortOrder {
+//    ASCENDING,
+//    DESCENDING,
+//  }
   private  List<GalleryApp> apps;
   private final List<GalleryApp> selectedApps;
-  private final Map<GalleryApp, ProjectWidgets> projectWidgets;
-  private SortField sortField;
-  private SortOrder sortOrder;
-
+  GalleryClient gallery = null;
+  GalleryGuiFactory galleryGF = null;
+  
   // UI elements
-  private final Grid table;
-  private final Label nameSortIndicator;
-  private final Label dateSortIndicator;
+  private final FlowPanel galleryGUI;
+  private final TabPanel appTabs;
+  private final FlowPanel appRecent;
+  private final FlowPanel appFeatured;
+  private final FlowPanel appPopular;
+  private final FlowPanel appSearch;
+  private final FlowPanel appRecentContent;
+  private final FlowPanel appFeaturedContent;
+  private final FlowPanel appPopularContent;
+  private final FlowPanel appSearchContent;
+
+  private int appRecentCounter = 0;
+  private int appFeaturedCounter = 0;
+  private int appPopularCounter = 0;
+  private int appSearchCounter = 0;
+  private boolean appRecentExhausted = false;
+  private boolean appFeaturedExhausted = false;
+  private boolean appPopularExhausted = false;
+  private boolean appSearchExhausted = false;
+  private final int offset = 5;
+  private final String activeNext = "http://i.imgur.com/PC2RTC5.png";
+  private final String activePrev = "http://i.imgur.com/K8aiGBZ.png";
+  private final String disabledNext = "http://i.imgur.com/UYeELMN.png";
+  private final String disabledPrev = "http://i.imgur.com/FGDpu47.png";
 
   /**
    * Creates a new GalleryList
    */
   public GalleryList() {
-    //apps = new ArrayList<GalleryApp>();
-	GalleryClient gallery = new GalleryClient();
-	apps = gallery.generateFakeApps();
+	  gallery = new GalleryClient(this);
+	  galleryGF = new GalleryGuiFactory();
+
     selectedApps = new ArrayList<GalleryApp>();
-    projectWidgets = new HashMap<GalleryApp, ProjectWidgets>();
-    /*
-    for (GalleryApp app : apps) {
-    	projectWidgets.put(app, new ProjectWidgets(app));
-    }
-    */
     
-    sortField = SortField.NAME;
-    sortOrder = SortOrder.ASCENDING;
-
     // Initialize UI
-    table = new Grid(1, 4); // The table initially contains just the header row.
-    table.addStyleName("ode-ProjectTable");
-    table.setWidth("100%");
-    table.setCellSpacing(0);
-    nameSortIndicator = new Label("");
-    dateSortIndicator = new Label("");
-    refreshSortIndicators();
-    setHeaderRow();
+    galleryGUI = new FlowPanel();
+    galleryGUI.addStyleName("gallery");
+    appTabs = new TabPanel();
+    appRecent = new FlowPanel();
+    appFeatured = new FlowPanel();
+    appPopular = new FlowPanel();
+    appSearch = new FlowPanel();
+    appRecentContent = new FlowPanel();
+    appFeaturedContent = new FlowPanel();
+    appPopularContent = new FlowPanel();
+    appSearchContent = new FlowPanel();
 
+    // HTML segment for gallery typeface
+    HTML headerExtra = new HTML(
+    		"<link href='http://fonts.googleapis.com/css?family=Roboto:400,300,100' rel='stylesheet' type='text/css'>");
+    galleryGUI.add(headerExtra);
+
+    // Add content to panels
+    addGalleryAppTab(appFeatured, appFeaturedContent, 1);
+    addGalleryAppTab(appRecent, appRecentContent, 2);
+    addGalleryAppTab(appSearch, appSearchContent, 3);
+    addGalleryAppTab(appPopular, appPopularContent, 5);
+//    addGallerySearchTab(appSearch);
+
+    // Add panels to main tabPanel
+    appTabs.add(appRecent, "Recent");
+    appTabs.add(appFeatured, "Featured");
+    appTabs.add(appPopular, "Popular");
+    appTabs.add(appSearch, "Search");
+    appTabs.selectTab(0);
+    appTabs.addStyleName("gallery-app-tabs");
+    galleryGUI.add(appTabs);
+    
+    // Initialize top-level GUI
     VerticalPanel panel = new VerticalPanel();
     panel.setWidth("100%");
-
-    panel.add(table);
+    panel.add(galleryGUI);
+    
     initWidget(panel);
     
-    getApps("http://gallery.appinventor.mit.edu/rpc?tag=featured");
-    
-    GalleryClient client = new GalleryClient();
-	apps = client.generateFakeApps();
-	projectWidgets.put(apps.get(0), new ProjectWidgets(apps.get(0)));
-	projectWidgets.put(apps.get(1), new ProjectWidgets(apps.get(1)));
-	refreshTable(false);
+    // Calls to gallery get methods will eventually trigger call back to methods
+    // at bottom of this file
+    gallery.GetFeatured(0, offset, 0);
+    gallery.GetMostDownloaded(0, offset);
+  }
 
-    // It is important to listen to project manager events as soon as possible.
-    //Ode.getInstance().getProjectManager().addProjectManagerEventListener(this);
+
+  /**
+   * Creates the GUI components for a regular app tab.
+   * This method resides here because it needs access to global variables.
+   *
+   * @param container: the FlowPanel that this app tab will reside.
+   *
+   * @param content: the sub-panel that contains the actual app content.
+   *
+   * @param request: type of app request, for pagination.
+   */
+  private void addGalleryAppTab(FlowPanel container, FlowPanel content, final int request) {
+
+    final TextBox searchText = new TextBox();
+    // Search specific
+    if (request == 3) {
+      FlowPanel searchPanel = new FlowPanel();
+      searchText.addStyleName("gallery-search-textarea");
+      Button sb = new Button("Search for apps");
+      searchPanel.add(searchText);
+      searchPanel.add(sb);
+      searchPanel.addStyleName("gallery-search-panel");
+      container.add(searchPanel);
+      appSearchContent.addStyleName("gallery-search-results");
+      container.add(appSearchContent);
+      container.addStyleName("gallery-search");
+      sb.addClickHandler(new ClickHandler() {
+        //  @Override
+        public void onClick(ClickEvent event) {
+          gallery.FindApps(searchText.getText(), 0, offset, 0);
+        }
+      }); 
+    }
+    
+    // Add regular GUI components
+    final Image buttonPrev = new Image();
+//    buttonPrev.setUrl(activePrev);
+    buttonPrev.setUrl(disabledPrev);
+    FlowPanel prev = new FlowPanel();
+    prev.add(buttonPrev);
+    prev.addStyleName("gallery-nav-prev");
+    container.add(prev);
+    
+    gallery.GetMostRecent(appRecentCounter, 5);
+    container.add(content);
+
+    final Image buttonNext = new Image();
+    buttonNext.setUrl(activeNext);
+    FlowPanel next = new FlowPanel();
+    next.add(buttonNext);
+    next.addStyleName("gallery-nav-next");
+    container.add(next);
+    
+    final Label counter = new Label("Counting...");
+    counter.addStyleName("gallery-nav-counter");
+    if (request != 1) {
+      container.add(counter);
+      counter.setText("");      
+    }
+    
+    buttonPrev.addClickHandler(new ClickHandler() {
+      //  @Override
+      public void onClick(ClickEvent event) {
+        switch (request) {
+        case 1: 
+          if (appFeaturedCounter - offset >= 0) {
+            // If the previous page still has apps to retrieve, do it
+            appFeaturedCounter -= offset;
+            gallery.GetFeatured(appFeaturedCounter, offset, 0);
+            buttonPrev.setUrl(activePrev);
+          } else {
+            buttonPrev.setUrl(disabledPrev);
+            OdeLog.log("prev appFeaturedCounter = " + appFeaturedCounter);
+          }
+          break;   
+        case 2: 
+          if (appRecentCounter - offset >= 0) {
+            // If the previous page still has apps to retrieve, do it
+            appRecentCounter -= offset;
+            gallery.GetMostRecent(appRecentCounter, offset);
+            buttonPrev.setUrl(activePrev);
+          } else {
+            buttonPrev.setUrl(disabledPrev);
+            OdeLog.log("prev appRecentCounter = " + appRecentCounter);
+          }
+          break;  
+        case 3: 
+          if (appSearchCounter - offset >= 0) {
+            // If the previous page still has apps to retrieve, do it
+            appSearchCounter -= offset;
+            gallery.FindApps(searchText.getText(), appSearchCounter, offset, 0);
+            buttonPrev.setUrl(activePrev);
+          } else {
+            buttonPrev.setUrl(disabledPrev);
+            OdeLog.log("prev appSearchCounter = " + appSearchCounter);
+          }
+          break;  
+        case 5:
+          if (appPopularCounter - offset >= 0) {
+            // If the previous page still has apps to retrieve, do it
+            appPopularCounter -= offset;
+            gallery.GetMostDownloaded(appPopularCounter, offset);
+            buttonPrev.setUrl(activePrev);
+          } else {
+            buttonPrev.setUrl(disabledPrev);
+            OdeLog.log("prev appPopularCounter = " + appPopularCounter);
+          }
+          break;  
+        }
+      }
+    });    
+    buttonNext.addClickHandler(new ClickHandler() {
+      //  @Override
+      public void onClick(ClickEvent event) {
+        switch (request) {
+          case 1: 
+            if (!appFeaturedExhausted) {
+              // If the next page still has apps to retrieve, do it
+              appFeaturedCounter += offset;
+              gallery.GetFeatured(appFeaturedCounter, offset, 0);
+              buttonNext.setUrl(activeNext);
+            } else {
+              buttonNext.setUrl(disabledNext);
+              OdeLog.log("next appFeaturedCounter = " + appFeaturedCounter);
+            }
+            break;    
+          case 2: 
+            if (!appRecentExhausted) {
+              // If the next page still has apps to retrieve, do it
+              appRecentCounter += offset;
+              gallery.GetMostRecent(appRecentCounter, offset);
+              buttonNext.setUrl(activeNext);
+            } else {
+              buttonNext.setUrl(disabledNext);
+              OdeLog.log("next appRecentCounter = " + appRecentCounter);
+            }
+            break;   
+          case 3: 
+            if (!appSearchExhausted) {
+              // If the next page still has apps to retrieve, do it
+              appSearchCounter += offset;
+              gallery.FindApps(searchText.getText(), appSearchCounter, offset, 0);
+              buttonNext.setUrl(activeNext);
+            } else {
+              buttonNext.setUrl(disabledNext);
+              OdeLog.log("next appSearchCounter = " + appSearchCounter);
+            }
+            break;   
+          case 5:
+            if (!appPopularExhausted) {
+              // If the next page still has apps to retrieve, do it
+              appPopularCounter += offset;
+              gallery.GetMostDownloaded(appPopularCounter, offset);
+              buttonNext.setUrl(activeNext);
+            } else {
+              buttonNext.setUrl(disabledNext);
+              OdeLog.log("next appPopularCounter = " + appPopularCounter);
+            }
+            break;   
+        }
+      }
+    });    
   }
 
   /**
-   * Adds the header row to the table.
+   * Creates the GUI components for search tab.
    *
+   * @param searchApp: the FlowPanel that search tab will reside.
    */
-  private void setHeaderRow() {
-    table.getRowFormatter().setStyleName(0, "ode-ProjectHeaderRow");
-
-    HorizontalPanel nameHeader = new HorizontalPanel();
-    final Label nameHeaderLabel = new Label(MESSAGES.projectNameHeader());
-    nameHeaderLabel.addStyleName("ode-ProjectHeaderLabel");
-    nameHeader.add(nameHeaderLabel);
-    nameSortIndicator.addStyleName("ode-ProjectHeaderLabel");
-    nameHeader.add(nameSortIndicator);
-    table.setWidget(0, 1, nameHeader);
+  private void addGallerySearchTab(FlowPanel searchApp) {
+    // Add search GUI
+    FlowPanel searchPanel = new FlowPanel();
+    final TextBox searchText = new TextBox();
+    searchText.addStyleName("gallery-search-textarea");
+    Button sb = new Button("Search for apps");
+    searchPanel.add(searchText);
+    searchPanel.add(sb);
+    searchPanel.addStyleName("gallery-search-panel");
+    searchApp.add(searchPanel);
+    appSearchContent.addStyleName("gallery-search-results");
+    searchApp.add(appSearchContent);
+    searchApp.addStyleName("gallery-search");
     
-    HorizontalPanel imageHeader = new HorizontalPanel();
-    Label imageHeaderLabel = new Label("image");
-    imageHeaderLabel.addStyleName("ode-ProjectHeaderLabel");
-    imageHeader.add(imageHeaderLabel);
-    //dateSortIndicator.addStyleName("ode-ProjectHeaderLabel");
-    //imageHeader.add(dateSortIndicator);
-    table.setWidget(0, 2, imageHeader);
-
-    HorizontalPanel dateHeader = new HorizontalPanel();
-    Label dateHeaderLabel = new Label(MESSAGES.projectDateHeader());
-    dateHeaderLabel.addStyleName("ode-ProjectHeaderLabel");
-    dateHeader.add(dateHeaderLabel);
-    dateSortIndicator.addStyleName("ode-ProjectHeaderLabel");
-    dateHeader.add(dateSortIndicator);
-    table.setWidget(0, 3, dateHeader);
-    
-    
-   
-
-    MouseDownHandler mouseDownHandler = new MouseDownHandler() {
-     // @Override
-      public void onMouseDown(MouseDownEvent e) {
-        SortField clickedSortField =
-            (e.getSource() == nameHeaderLabel || e.getSource() == nameSortIndicator)
-            ? SortField.NAME
-            : SortField.DATE;
-        changeSortOrder(clickedSortField);
-      }
-    };
-    nameHeaderLabel.addMouseDownHandler(mouseDownHandler);
-    nameSortIndicator.addMouseDownHandler(mouseDownHandler);
-    dateHeaderLabel.addMouseDownHandler(mouseDownHandler);
-    dateSortIndicator.addMouseDownHandler(mouseDownHandler);
-  }
-
-  private void changeSortOrder(SortField clickedSortField) {
-    if (sortField != clickedSortField) {
-      sortField = clickedSortField;
-      sortOrder = SortOrder.ASCENDING;
-    } else {
-      if (sortOrder == SortOrder.ASCENDING) {
-        sortOrder = SortOrder.DESCENDING;
-      } else {
-        sortOrder = SortOrder.ASCENDING;
-      }
-    }
-  //  refreshTable(true);
-  }
-
-  private void refreshSortIndicators() {
-    String text = (sortOrder == SortOrder.ASCENDING)
-        ? "\u25B2"      // up-pointing triangle
-        : "\u25BC";     // down-pointing triangle
-    switch (sortField) {
-      case NAME:
-        nameSortIndicator.setText(text);
-        dateSortIndicator.setText("");
-        break;
-      case DATE:
-        dateSortIndicator.setText(text);
-        nameSortIndicator.setText("");
-        break;
-    }
-  }
-
-  private class ProjectWidgets {
-    final CheckBox checkBox;
-    final Label nameLabel;
-    final Label dateLabel;
-    final Image image;
-
-    private ProjectWidgets(final GalleryApp app) {
-      checkBox = new CheckBox();
-      checkBox.addValueChangeHandler(new ValueChangeHandler<Boolean>() {
-       // @Override
-        public void onValueChange(ValueChangeEvent<Boolean> event) {
-          boolean isChecked = event.getValue(); // auto-unbox from Boolean to boolean
-          int row = 1 + apps.indexOf(app);
-          if (isChecked) {
-            table.getRowFormatter().setStyleName(row, "ode-ProjectRowHighlighted");
-            selectedApps.add(app);
-          } else {
-            table.getRowFormatter().setStyleName(row, "ode-ProjectRowUnHighlighted");
-            selectedApps.remove(app);
-          }
-          Ode.getInstance().getProjectToolbar().updateButtons();
-        }
-      });
-
-      nameLabel = new Label(app.getTitle());
-      nameLabel.addClickHandler(new ClickHandler() {
+    sb.addClickHandler(new ClickHandler() {
       //  @Override
-        public void onClick(ClickEvent event) {
-          //Ode.getInstance().openYoungAndroidProjectInDesigner(app);
-          loadGalleryZip(app.getTitle(),app.getZipURL());
-        }
-      });
-      nameLabel.addStyleName("ode-ProjectNameLabel");
-
-      //Date date = new Date(app.getDate());
-      //DateTimeFormat dateTimeFormat = DateTimeFormat.getMediumDateTimeFormat();
-      dateLabel = new Label(app.getCreationDate());
-      image = new Image();
-      image.setUrl(app.getImageURL());
-      
-    }
+      public void onClick(ClickEvent event) {
+        gallery.FindApps(searchText.getText(), 0, offset, 0);
+      }
+    });    
   }
 
-  private void refreshTable(boolean needToSort) {
-    /*if (needToSort) {
-      // Sort the projects.
-      Comparator<GalleryApp> comparator;
-      switch (sortField) {
-        default:
-        case NAME:
-          comparator = (sortOrder == SortOrder.ASCENDING)
-              ? ProjectComparators.COMPARE_BY_NAME_ASCENDING
-              : ProjectComparators.COMPARE_BY_NAME_DESCENDING;
-          break;
-        case DATE:
-          comparator = (sortOrder == SortOrder.ASCENDING)
-              ? ProjectComparators.COMPARE_BY_DATE_ASCENDING
-              : ProjectComparators.COMPARE_BY_DATE_DESCENDING;
-          break;
-      }
-      Collections.sort(apps, comparator);
-    }*/
 
-    refreshSortIndicators();
-
-    // Refill the table.
-    table.resize(1 + apps.size(), 4);
-    int row = 1;
-    for (GalleryApp app : apps) {
-      ProjectWidgets pw = projectWidgets.get(app);
-      if (selectedApps.contains(app)) {
-        table.getRowFormatter().setStyleName(row, "ode-ProjectRowHighlighted");
-        pw.checkBox.setValue(true);
-      } else {
-        table.getRowFormatter().setStyleName(row, "ode-ProjectRowUnHighlighted");
-        pw.checkBox.setValue(false);
-      }
-      table.setWidget(row, 0, pw.checkBox);
-      table.setWidget(row, 1, pw.nameLabel);
-      table.setWidget(row,2,pw.image);
-      table.setWidget(row, 3, pw.dateLabel);
-      
-      row++;
+  /**
+   * Loads the proper tab GUI with gallery's app data.
+   *
+   * @param apps: list of returned gallery apps from callback.
+   * 
+   * @param requestId: determines the specific type of app data.
+   */
+  private void refreshApps(List<GalleryApp> apps, int requestId) {
+    switch (requestId) {
+      case 1: 
+        if (apps.size() < offset) {
+          // That means there's not enough apps to show (reaches the end)
+          appFeaturedExhausted = true;
+        } else {
+          appFeaturedExhausted = false;
+        }
+        galleryGF.generateHorizontalAppList(apps, appFeaturedContent, true); 
+        break;   
+      case 2: 
+        if (apps.size() < offset) {
+          // That means there's not enough apps to show (reaches the end)
+          appRecentExhausted = true;
+        } else {
+          appRecentExhausted = false;
+        }
+        galleryGF.generateHorizontalAppList(apps, appRecentContent, true); 
+        break;    
+      case 3: 
+        if (apps.size() < offset) {
+          // That means there's not enough apps to show (reaches the end)
+          appSearchExhausted = true;
+        } else {
+          appSearchExhausted = false;
+        }
+        galleryGF.generateHorizontalAppList(apps, appSearchContent, true); 
+        break;   
+      case 5: 
+        if (apps.size() < offset) {
+          // That means there's not enough apps to show (reaches the end)
+          appPopularExhausted = true;
+        } else {
+          appPopularExhausted = false;
+        }
+        galleryGF.generateHorizontalAppList(apps, appPopularContent, true); 
+        break;
     }
-
-    //Ode.getInstance().getProjectToolbar().updateButtons();
   }
 
   /**
@@ -326,107 +437,38 @@ public class GalleryList extends Composite {
     return selectedApps;
   }
   
-  public void getApps(String url)
+  public void onAppListRequestCompleted(List<GalleryApp> apps, int requestId)
   {
-	  
-	// Callback for updating the project explorer after the project is created on the back-end
-	    final Ode ode = Ode.getInstance();
-	    final OdeAsyncCallback<String> callback = new OdeAsyncCallback<String>(
-			      // failure message
-	      MESSAGES.galleryError()) {
-	        @Override
-	        public void onSuccess(String data) {
-	        // Update project explorer -- i.e., display in project view
-	        if (data== null) {
+    if (apps != null)
+      refreshApps(apps, requestId);
+    else
+      Window.alert("apps was null");
+  }
 
-	          Window.alert("api call: no data returned from service");
-	       
-			  return;
-		    }
-	        Window.alert("api call: got some data:"+data);
-	      }
-	    };
-	    
-	   ode.getProjectService().getApps(callback);
-	  
-	/* we were trying to directly call api
-    RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, url);
-   
-    Request response=null;
-	try {
-	     response = builder.sendRequest(null, new RequestCallback() {
-        public void onError(Request request, Throwable exception) {
-        // Code omitted for clarity
-      	  
-        }
-
-        public void onResponseReceived(Request request, Response response) {
-        // Code omitted for clarity
-        	int status=response.getStatusCode();
-        	
-        	OdeLog.log("gallery: got a response " + String.valueOf(status));
-        	//refreshTable(false);
-        
-        }
-  
-        });
-    } catch (RequestException e) {
-    	// Code omitted for clarity
-    	
-    }
-    */
-  
+  public void onCommentsRequestCompleted(List<GalleryComment> comments)
+  {
+      // Window.alert("comments returned:"+comments.size());
   }
   
-  public void loadGalleryZip(final String projectName, String zipURL) {
-	final NewProjectCommand onSuccessCommand = new NewProjectCommand() {
+  public void onSourceLoadCompleted(UserProject projectInfo) {
+    final NewProjectCommand onSuccessCommand = new NewProjectCommand() {
        @Override
        public void execute(Project project) {
             Ode.getInstance().openYoungAndroidProjectInDesigner(project);
        }
     };
-
-    // Callback for updating the project explorer after the project is created on the back-end
+    // Update project explorer -- i.e., display in project view
     final Ode ode = Ode.getInstance();
-    final OdeAsyncCallback<UserProject> callback = new OdeAsyncCallback<UserProject>(
-		      // failure message
-      MESSAGES.createProjectError()) {
-      @Override
-      public void onSuccess(UserProject projectInfo) {
-      // Update project explorer -- i.e., display in project view
-      if (projectInfo == null) {
-
-        Window.alert("This template has no zip file. Creating a new project with name = " + projectName);
-        ode.getProjectService().newProject(YoungAndroidProjectNode.YOUNG_ANDROID_PROJECT_TYPE,
-		            projectName,
-		            new NewYoungAndroidProjectParameters(projectName),
-		            this);
-		return;
-	  }
+    if (projectInfo == null) {
+      Window.alert("Unable to create project from Gallery source"); 
+    }
+    else {
       Project project = ode.getProjectManager().addProject(projectInfo);
       if (onSuccessCommand != null) {
         onSuccessCommand.execute(project);
       }
     }
-   };
-   RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, zipURL);
-   try {
-      Request response = builder.sendRequest(null, new RequestCallback() {
-      @Override
-      public void onError(Request request, Throwable exception) {
-         Window.alert("Unable to load Gallery zip file");
-      }
-      @Override
-      public void onResponseReceived(Request request, Response response) {
-          Window.alert("response:"+String.valueOf(response.getStatusCode()));
-    	  ode.getProjectService().newProjectFromExternalTemplate(projectName,response.getText(),callback);
-      }
-
-      });
-    } catch (RequestException e) {
-        Window.alert("Error fetching project zip file template.");
-    } 
-  } 
+  }
 }	  
   
   

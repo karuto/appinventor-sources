@@ -14,6 +14,7 @@ import com.google.appinventor.client.boxes.OdeLogBox;
 import com.google.appinventor.client.boxes.PaletteBox;
 import com.google.appinventor.client.boxes.ProjectListBox;
 import com.google.appinventor.client.boxes.GalleryListBox;
+import com.google.appinventor.client.boxes.GalleryAppBox;
 import com.google.appinventor.client.boxes.PropertiesBox;
 import com.google.appinventor.client.boxes.SourceStructureBox;
 import com.google.appinventor.client.boxes.ViewerBox;
@@ -86,6 +87,8 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.client.ui.Widget;
 
+import com.google.appinventor.shared.rpc.project.GalleryApp;
+
 /**
  * Main entry point for Ode. Defines the startup UI elements in
  * {@link #onModuleLoad()}.
@@ -135,6 +138,7 @@ public class Ode implements EntryPoint {
   private static final int DESIGNER = 0;
   private static final int PROJECTS = 1;
   private static final int GALLERY = 2;
+  private static final int GALLERYAPP = 3;
   private static int currentView = DESIGNER;
 
   /*
@@ -157,12 +161,14 @@ public class Ode implements EntryPoint {
   private int designTabIndex;
   private int debuggingTabIndex;
   private int galleryTabIndex;
+  private int galleryAppTabIndex;
   private TopPanel topPanel;
   private StatusPanel statusPanel;
   private HorizontalPanel workColumns;
   private VerticalPanel structureAndAssets;
   private ProjectToolbar projectToolbar;
   private DesignToolbar designToolbar;
+  private TopToolbar topToolbar;
   // Popup that indicates that an asynchronous request is pending. It is visible
   // initially, and will be hidden automatically after the first RPC completes.
   private static RpcStatusPopup rpcStatusPopup;
@@ -250,15 +256,28 @@ public class Ode implements EntryPoint {
    */
   public void switchToProjectsView() {
     currentView = PROJECTS;
+    getTopToolbar().updateFileMenuButtons(currentView);
     deckPanel.showWidget(projectsTabIndex);
   }
   
   /**
-   * Switch to the Projects tab
+   * Switch to the Gallery tab
    */
   public void switchToGalleryView() {
     currentView = GALLERY;
     deckPanel.showWidget(galleryTabIndex);
+    
+  }
+
+  
+  /**
+   * Switch to the Gallery App 
+   */
+  public void switchToGalleryAppView(GalleryApp app) {
+    currentView = GALLERYAPP;
+//    OdeLog.log("######### I got in switchToGalleryAppView");
+    GalleryAppBox.setApp(app);
+    deckPanel.showWidget(galleryAppTabIndex);
     
   }
 
@@ -269,6 +288,7 @@ public class Ode implements EntryPoint {
     // Only show designer if there is a current editor.
     // ***** THE DESIGNER TAB DOES NOT DISPLAY CORRECTLY IF THERE IS NO CURRENT EDITOR. *****
     currentView = DESIGNER;
+    getTopToolbar().updateFileMenuButtons(currentView);
     if (currentFileEditor != null) {
       deckPanel.showWidget(designTabIndex);
     } else {
@@ -360,6 +380,7 @@ public class Ode implements EntryPoint {
       }
       assetManager.loadAssets(project.getProjectId());
     }
+    getTopToolbar().updateFileMenuButtons(1);
   }
 
   /**
@@ -519,6 +540,8 @@ public class Ode implements EntryPoint {
         }
       }
     };
+
+    deckPanel.setAnimationEnabled(true);
     deckPanel.sinkEvents(Event.ONCONTEXTMENU);
     deckPanel.setStyleName("ode-DeckPanel");
 
@@ -538,6 +561,25 @@ public class Ode implements EntryPoint {
     // Design tab
     VerticalPanel dVertPanel = new VerticalPanel();
     dVertPanel.setWidth("100%");
+    dVertPanel.setHeight("100%");
+
+    // Add the Code Navigation arrow
+//    switchToBlocksButton = new VerticalPanel();
+//    switchToBlocksButton.setVerticalAlignment(VerticalPanel.ALIGN_MIDDLE);
+//    switchToBlocksButton.setHorizontalAlignment(VerticalPanel.ALIGN_CENTER);
+//    switchToBlocksButton.setStyleName("ode-NavArrow");
+//    switchToBlocksButton.add(new Image(RIGHT_ARROW_IMAGE_URL));
+//    switchToBlocksButton.setWidth("25px");
+//    switchToBlocksButton.setHeight("100%");
+
+    // Add the Code Navigation arrow
+//    switchToDesignerButton = new VerticalPanel();
+//    switchToDesignerButton.setVerticalAlignment(VerticalPanel.ALIGN_MIDDLE);
+//    switchToDesignerButton.setHorizontalAlignment(VerticalPanel.ALIGN_CENTER);
+//    switchToDesignerButton.setStyleName("ode-NavArrow");
+//    switchToDesignerButton.add(new Image(LEFT_ARROW_IMAGE_URL));
+//    switchToDesignerButton.setWidth("25px");
+//    switchToDesignerButton.setHeight("100%");
 
     designToolbar = new DesignToolbar();
     dVertPanel.add(designToolbar);
@@ -545,13 +587,16 @@ public class Ode implements EntryPoint {
     workColumns = new HorizontalPanel();
     workColumns.setWidth("100%");
 
+    //workColumns.add(switchToDesignerButton);
+
     Box palletebox = PaletteBox.getPaletteBox();
-    palletebox.setWidth("225px");
+    palletebox.setWidth("222px");
     workColumns.add(palletebox);
 
     Box viewerbox = ViewerBox.getViewerBox();
     workColumns.add(viewerbox);
     workColumns.setCellWidth(viewerbox, "97%");
+    workColumns.setCellHeight(viewerbox, "97%");
 
     structureAndAssets = new VerticalPanel();
     structureAndAssets.setVerticalAlignment(VerticalPanel.ALIGN_TOP);
@@ -564,11 +609,11 @@ public class Ode implements EntryPoint {
     workColumns.add(structureAndAssets);
 
     Box propertiesbox = PropertiesBox.getPropertiesBox();
-    propertiesbox.setWidth("210px");
+    propertiesbox.setWidth("222px");
     workColumns.add(propertiesbox);
-
+    //switchToBlocksButton.setHeight("650px");
+    //workColumns.add(switchToBlocksButton);
     dVertPanel.add(workColumns);
-
     designTabIndex = deckPanel.getWidgetCount();
     deckPanel.add(dVertPanel);
 
@@ -587,6 +632,19 @@ public class Ode implements EntryPoint {
     galleryTabIndex = deckPanel.getWidgetCount();
     deckPanel.add(gVertPanel);
     
+     // Gallery app
+    VerticalPanel aVertPanel = new VerticalPanel();
+    aVertPanel.setWidth("100%");
+    aVertPanel.setSpacing(0);
+    HorizontalPanel appPanel = new HorizontalPanel();
+    appPanel.setWidth("100%");
+    
+    appPanel.add(GalleryAppBox.getGalleryAppBox());
+  
+    
+    aVertPanel.add(appPanel);
+    galleryAppTabIndex = deckPanel.getWidgetCount();
+    deckPanel.add(aVertPanel);
     
     
     // Debugging tab
@@ -650,14 +708,17 @@ public class Ode implements EntryPoint {
     mainPanel.setCellHeight(deckPanel, "100%");
     mainPanel.setCellWidth(deckPanel, "100%");
 
+//    mainPanel.add(switchToDesignerButton, DockPanel.WEST);
+//    mainPanel.add(switchToBlocksButton, DockPanel.EAST);
+
     //Commenting out for now to gain more space for the blocks editor
-    //mainPanel.add(statusPanel, DockPanel.SOUTH);
+    mainPanel.add(statusPanel, DockPanel.SOUTH);
     mainPanel.setSize("100%", "100%");
     RootPanel.get().add(mainPanel);
 
     // There is no sure-fire way of preventing people from accidentally navigating away from ODE
     // (e.g. by hitting the Backspace key). What we do need though is to make sure that people will
-    // not lose any work because of this. We hook into the window closing event to detect the
+    // not lose any work because of this. We hook into the window closing  event to detect the
     // situation.
     Window.addWindowClosingHandler(new Window.ClosingHandler() {
       @Override
@@ -760,6 +821,26 @@ public class Ode implements EntryPoint {
    */
   public DesignToolbar getDesignToolbar() {
     return designToolbar;
+  }
+
+  /**
+   * Returns the design tool bar.
+   *
+   * @return  {@link DesignToolbar}
+   */
+  public TopToolbar getTopToolbar() {
+    return topToolbar;
+  }
+
+  /**
+   * Set the location of the topToolBar. Called from
+   * TopPanel(). We need a way to find it because the
+   * blockly code needs to interact with the Connect-To
+   * dropdown when a connection to a companion terminates.
+   */
+
+  public void setTopToolbar(TopToolbar toolbar) {
+    topToolbar = toolbar;
   }
 
   /**
@@ -977,8 +1058,8 @@ public class Ode implements EntryPoint {
         HasVerticalAlignment.ALIGN_MIDDLE);
 
     Label messageChunk1 = new Label("You don't have any projects yet."
-        + " To learn how to use App Inventor, click the \"Learn\" item"
-        + " at the top of the window; or to start your first project, click "
+        + " To learn how to use App Inventor, click the \"Guide\" link"
+        + " at the upper right of the window; or to start your first project, click "
         + " the \"New\" button at the upper left of the window.");
     messageChunk1.setWidth("23em");
     Label messageChunk2 = new Label("Happy Inventing!");
@@ -986,16 +1067,16 @@ public class Ode implements EntryPoint {
     // Add the elements to the grids and DialogBox.
     messageGrid.setWidget(0, 0, messageChunk1);
     messageGrid.setWidget(1, 0, messageChunk2);
-
     mainGrid.setWidget(0, 0, dialogImage);
     mainGrid.setWidget(0, 1, messageGrid);
 
     dialogBox.setWidget(mainGrid);
-
     dialogBox.center();
+
     if (showDialog) {
       dialogBox.show();
     }
+
     return dialogBox;
   }
 
@@ -1043,7 +1124,9 @@ public class Ode implements EntryPoint {
     DialogBoxContents.add(message);
     DialogBoxContents.add(holder);
     dialogBox.setWidget(DialogBoxContents);
-    dialogBox.show();
+    if (showDialog) {
+      dialogBox.show();
+    }
     return dialogBox;
   }
 

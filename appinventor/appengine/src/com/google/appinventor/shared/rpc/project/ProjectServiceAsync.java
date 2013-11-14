@@ -77,7 +77,12 @@ public interface ProjectServiceAsync {
   /**
    * @see ProjectService#loadraw(long, String)
    */
+
   void loadraw(long projectId, String fileId, AsyncCallback<byte []> callback);
+  /**
+   * @see ProjectService#loadraw2(long, String)
+   */
+  void loadraw2(long projectId, String fileId, AsyncCallback<String> callback);
 
   /**
    * @see ProjectService#load(List)
@@ -109,8 +114,10 @@ public interface ProjectServiceAsync {
    */
   void addFile(long projectId, String fileId, AsyncCallback<Long> callback);
   
-  void newProjectFromExternalTemplate(String projectName, String zipData, AsyncCallback<UserProject>
+  void newProjectFromExternalTemplate(String appName, String sourceURL, AsyncCallback<UserProject>
   callback);
   
-  void getApps(AsyncCallback<String> callback);
+  void getApps(String url,AsyncCallback<List<GalleryApp>> callback);
+
+  void getComments(String url,AsyncCallback<List<GalleryComment>> callback);
 }

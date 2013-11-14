@@ -124,6 +124,17 @@ public interface ProjectService extends RemoteService {
   byte[] loadraw(long projectId, String fileId);
 
   /**
+   * Loads the file information associated with a node in the project tree. The
+   * actual return value is the raw file contents encoded as base64.
+   *
+   * @param projectId  project ID
+   * @param fileId  project node whose source should be loaded
+   *
+   * @return  raw file content as base64
+   */
+  String loadraw2(long projectId, String fileId);
+
+  /**
    * Loads the contents of multiple files.
    *
    * @param files  list containing file descriptor of files to be loaded
@@ -184,7 +195,7 @@ public interface ProjectService extends RemoteService {
    */
   long addFile(long projectId, String fileId);
   
-  UserProject newProjectFromExternalTemplate(String projectName, String zipData);
+  UserProject newProjectFromExternalTemplate(String appName, String sourceURL);
   
   /**
    * Reads the template data from a JSON File
@@ -194,13 +205,14 @@ public interface ProjectService extends RemoteService {
    *
    * @return a {@link String} or the template data
    */
-  
-  String getApps();
+ 
+  List<GalleryApp> getApps(String url);
   
   /**
    * gets apps from the gallery
 
    *
-   * @return a {@link String} or the template data
+   * @return a {@link List} 
    */
+   List<GalleryComment> getComments(String url);
 }

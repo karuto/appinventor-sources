@@ -10,7 +10,7 @@ they get cut off in Windows.
 
 @font-face {
   font-family: Roboto;
-  src: url(/fonts/Roboto-Regular.ttf) format("truetype");
+  src: url('http://fonts.googleapis.com/css?family=Roboto');
 }
 
 body, html {
@@ -64,7 +64,14 @@ select {
 }
 
 .ode-ContextMenuItem {
-  padding: 6px 12px;
+  min-width: 50px;
+  padding: 4px 12px;
+  -o-transition:color .1s ease-out, background .1s ease-in;
+  -ms-transition:color .1s ease-out, background .1s ease-in;
+  -moz-transition:color .1s ease-out, background .1s ease-in;
+  -webkit-transition:color .1s ease-out, background .1s ease-in;
+  /* ...and now override with proper CSS property */
+  transition:color .1s ease-out, background .1s ease-in;
 }
 
 .ode-ContextMenuItemSeparator {
@@ -83,15 +90,7 @@ select {
 
 .ode-ContextMenuItem-selected {
   color: #ffffff;
-  text-decoration: none;
-  background-color: #99CC00;
-  background-image: -moz-linear-gradient(top, #99CC00, #8fc202);
-  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#99CC00), to(#8fc202));
-  background-image: -webkit-linear-gradient(top, #99CC00, #8fc202);
-  background-image: -o-linear-gradient(top, #99CC00, #8fc202);
-  background-image: linear-gradient(to bottom, #99CC00, #8fc202);
-  background-repeat: repeat-x;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff8fc202', endColorstr='#ff8fc202', GradientType=0);
+  background: #99CC00;
 }
 
 .ode-ContextMenuItem-disabled {
@@ -227,6 +226,7 @@ select {
 
 .ode-TopPanel {
   min-height: 40px;
+  height: 40px;
   margin-bottom: 4px;
   padding-right: 4px;
   padding-left: 4px;
@@ -257,14 +257,14 @@ select {
 }
 
 .ode-LogoText {
-  font-size: 18px;
+  font-size: 16px;
   color: grey;
   font-weight: 500;
   text-shadow: 0px 0px 0px #404040;
 }
 
 .ode-LogoVersion {
-  font-size: 11px;
+  font-size: 12px;
   color: grey;
   text-shadow: 0px 0px 0px #404040;
 }
@@ -283,21 +283,21 @@ select {
   color: #dedede;
 }
 
-.ode-TopPanelMiddleLinks .gwt-Label,
-.ode-TopPanelMiddleLinks .gwt-Anchor,
-.ode-TopPanelMiddleLinks .gwt-TitleLabel {
+.ode-TopPanelLinks .gwt-Label,
+.ode-TopPanelLinks .gwt-Anchor,
+.ode-TopPanelLinks .gwt-TitleLabel {
   cursor: pointer;
   color: rgb(100, 100, 100);
   font-family: Roboto, Helvetica, Arial, sans-serif;
   font-weight: 300;
-  font-size: 14px;
+  font-size: 12px;
   margin-right: 16px;
   text-decoration: none;
 }
 
-.ode-TopPanelMiddleLinks .gwt-Label:hover,
-.ode-TopPanelMiddleLinks .gwt-Anchor:hover,
-.ode-TopPanelMiddleLinks .gwt-TitleLabel:hover {
+.ode-TopPanelLinks .gwt-Label:hover,
+.ode-TopPanelLinks .gwt-Anchor:hover,
+.ode-TopPanelLinks .gwt-TitleLabel:hover {
   text-shadow: 0px 0px 1px #BABABA;
 }
 
@@ -311,6 +311,62 @@ select {
   font-size: 15px;
 }
 
+.ode-TopPanelIconButton {
+  margin: 4px 8px;
+  cursor: pointer;
+}
+
+.ode-TopPanelIconButton:hover {
+  -webkit-filter: drop-shadow(0px 0px 3px #222);
+  filter:         drop-shadow(0px 0px 3px #222);
+}
+
+.ode-TopPanelIconButton:active {
+
+}
+
+.ode-TopPanelButton,
+.ActionDropDown-Default,
+.ActionDropDown-Options {
+  font-size: 12px;
+  cursor: pointer;
+  margin: -12px 0px;
+  padding: 0px 12px;
+  height: 40px;
+  border: transparent;
+  background: transparent;
+  color: grey;
+  -o-transition:color .2s ease-out, background .2s ease-in;
+  -ms-transition:color .2s ease-out, background .2s ease-in;
+  -moz-transition:color .2s ease-out, background .2s ease-in;
+  -webkit-transition:color .2s ease-out, background .2s ease-in;
+  /* ...and now override with proper CSS property */
+  transition:color .2s ease-out, background .2s ease-in;
+}
+
+.ode-TopPanelButton:hover,
+.ActionDropDown-Default:hover
+.ActionDropDown-Options:hover {
+  background: #E6E6E6;
+  color: #5B5B5B;
+}
+
+.ode-TopPanelButton:active
+.ActionDropDown-Default:active
+.ActionDropDown-Options:active {
+
+}
+
+.ActionDropDown-Default {
+  padding: 0px 6px;
+}
+
+.ActionDropDown-Options {
+  padding: 0px 6px;
+}
+
+
+
 /*
  * Deck Panel
  */
@@ -318,6 +374,21 @@ select {
 .ode-DeckPanel {
   margin: 4px 8px 8px;
 }
+
+.ode-NavArrow {
+  border: transparent;
+  background: #C2C2C2;
+  -o-transition:color .2s ease-out, background .2s ease-in;
+  -ms-transition:color .2s ease-out, background .2s ease-in;
+  -moz-transition:color .2s ease-out, background .2s ease-in;
+  -webkit-transition:color .2s ease-out, background .2s ease-in;
+  /* ...and now override with proper CSS property */
+  transition:color .2s ease-out, background .2s ease-in;}
+
+.ode-NavArrow:hover {
+  background-color: darkgray;
+}
+
 
 
 /*
@@ -327,7 +398,10 @@ select {
 .ode-StatusPanel {
   font-size: 12px;
   color: #888;
-  padding: 15px 4px 4px 4px;
+  padding: 4px 12px;
+  background: url(images/toolbarBG.png) repeat;
+  border: 1px;
+  border-bottom: 1px solid #bbccff;
 }
 
 .ode-StatusPanel a {
@@ -396,6 +470,11 @@ select {
 
 .gwt-VerticalSplitPanel, gwt-HorizontalSplitPanel {
   background: white;
+}
+
+.gwt-TextBox {
+  padding: 0px !important;
+  margin: 0px !important;
 }
 
 .gwt-Tree .gwt-TreeItem span * {
@@ -981,9 +1060,9 @@ select.ode-PropertyEditor[disabled] {
   border: 1px solid rgba(0, 0, 0, 0.2);
   *border-right-width: 2px;
   *border-bottom-width: 2px;
-  -webkit-border-radius: 6px;
-  -moz-border-radius: 6px;
-  border-radius: 6px;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
   -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
   -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
@@ -1201,4 +1280,391 @@ textarea::-webkit-input-placeholder {
 .radio.inline + .radio.inline,
 .checkbox.inline + .checkbox.inline {
   margin-left: 10px;
+}
+
+
+
+/* Gallery-specific styles */
+/* Gallery app collections, or app cards related styles */
+.gallery > table {
+  border: none;
+  border-style: none;
+  width: 100%;
+}
+.gallery .gwt-TabPanel {
+  margin: 10px 0;
+}
+.gallery .gwt-TabBar {
+  margin: 10px 0 0;
+  border: none;
+  border-style: none; 
+}
+.gallery .gwt-TabBar .gwt-TabBarItem,
+.gallery .gwt-TabBar .gwt-TabBarItem-selected {
+  font-size: 28px;
+  font-family: "Roboto",Arial,sans-serif;
+  text-transform: uppercase;
+  padding: 5px;
+  margin: 0;  
+  border: none;
+  border-style: none;
+  background: none; 
+  background-color: none;
+  margin-right: 10px;
+}
+.gallery .gwt-TabBar .gwt-TabBarItem {
+  color: #999;	
+  font-weight: 100;
+}
+.gallery .gwt-TabBar .gwt-TabBarItem-selected {
+  color: #333;
+  font-weight: 300;
+}
+.gallery .gwt-TabPanelBottom { /* GWT wrapper for the selected tab content */
+  border: none;
+  border-style: none;
+  padding: 0;
+}
+.gallery-nav-prev,
+.gallery-nav-next {
+  float: left;
+  background-color: #fff;
+  height: 239px;
+  width: 25px;
+  margin: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -ms-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.gallery-nav-prev .gwt-Image,
+.gallery-nav-next .gwt-Image {
+  top: 50%;
+  position: relative;
+}
+.gallery-app-collection {
+  
+}
+.gallery-card {
+}
+.gallery-app-collection .gallery-card {
+  margin: 5px;
+  width: 160px;
+  float: left;
+  position: relative;
+  text-decoration: none;
+  vertical-align: top;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -ms-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.gallery-nav-prev:hover,
+.gallery-nav-next:hover,
+.gallery-app-collection .gallery-card:hover,
+.gallery-app-showcase .gallery-card:hover {
+  background-color: #EEE;
+  -webkit-transition: background-color 1s ease; 
+  -moz-transition: background-color 1s ease; 
+  -o-transition: background-color 1s ease; 	
+}
+.gallery-app-showcase .gallery-card {
+  clear: both;
+}
+.gallery-card-cover {
+  height: 130px;
+  width: 130px;
+  margin: 15px;
+}
+.gallery-app-showcase .gallery-card-cover {
+  float: left;
+  height: 75px;
+  width: 75px;
+}
+.gallery-card-content {
+  padding: 0 15px 15px;	
+  overflow: hidden;
+}
+.gallery-app-showcase .gallery-card-content {
+  overflow: hidden;
+  margin-left: 90px;
+  padding: 15px 15px 15px 0;
+}
+.gallery-card-content .gallery-title {
+  color: #333;
+  display: block;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 17px;
+  margin-bottom: 0px;
+  margin-top: 2px;
+  min-height: 17px;
+  overflow: hidden;
+  text-decoration: none;
+  position: relative;
+  white-space: nowrap;
+  cursor: auto;
+}
+.gallery-card-content .gallery-title:after {
+}
+.paragraph-end-block {
+  max-height: 100%;
+  height: 17px; /* Same as line-height of .gallery-title */
+  width: 50px;
+  bottom: 0;
+  right: 0;
+  position: absolute;
+  background-image: -webkit-gradient(linear,left top,right top,color-stop(0%,rgba(255,255,255,0)),color-stop(100%,rgba(255,255,255,1)));
+  background-image: -webkit-linear-gradient(left,rgba(255,255,255,0),rgba(255,255,255,1));
+  background-image: -moz-linear-gradient(left,rgba(255,255,255,0),rgba(255,255,255,1));
+  background-image: -ms-linear-gradient(left,rgba(255,255,255,0),rgba(255,255,255,1));
+  background-image: -o-linear-gradient(left,rgba(255,255,255,0),rgba(255,255,255,1));
+  background: linear-gradient(to right,rgba(255,255,255,0),rgba(255,255,255,1));
+  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=1,StartColorStr='#00ffffff',EndColorStr='#ffffff');
+}
+.gallery-card-content .gallery-subtitle {
+  font-size: 12px;
+  line-height: 15px;
+  color: #999;
+}
+.gallery-meta {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 15px;
+  text-decoration: none;
+  display: inline;
+  padding: 10px 10px 0 0;
+  color: #999;
+}
+.gallery-card-content .gwt-Image,
+.app-meta .gwt-Image { /* Mini meta images */
+  display: inline;
+  padding: 10px 5px 0 0;
+  width: 12px;
+  height: 12px;
+}
+.gallery-app-details .gwt-HTML {
+  padding: 30px 0;
+}
+.section-divider {
+  border-bottom: 1px solid #d6d6d6;
+  max-width: 1360px;
+  display: block;
+  margin: 30px 0 0;
+}
+
+/* Gallery search panel or search bar styles */
+.gallery-search {
+  margin: 0 0 20px;
+}
+.gallery-search-panel {
+  margin: 10px 5px;
+}
+.gallery-search-textarea {
+  width: 400px;
+  display: block;
+  color: #333;
+  line-height: 36px;
+  width: 200px;
+  text-shadow: none;
+  background-color: #fff;
+  background-position: 0 0;
+  background-image: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0;
+  border-color: none;
+  margin-right: 15px;	
+}
+.gallery-search .gwt-Button {
+  border-radius: 0;
+}
+
+/* Gallery individual app page styles */
+.gallery {
+}
+.gallery-app-single {
+  width: 100%;
+  display: block;
+  margin: 20px 10px;
+}
+.gallery-container {
+  float: left;
+  position: relative;
+  margin: 0 15px 15px 0;
+  background: #fff;
+  vertical-align: top;
+  text-decoration: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -moz-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -ms-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  -webkit-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.gallery-app-single .gallery-app-showcase {
+  width: 260px;
+  padding: 15px 0;
+}
+.gallery-showcase-title {
+  margin: 0 15px;
+  font-size: 21px;
+}
+.gallery-app-single .gallery-app-details {
+  width: 600px;
+  padding: 30px;
+}
+.app-header {
+  margin: 0px 30px 0 0;
+  float: left;
+}
+.app-header .app-image {
+  width: 130px;
+  height: 130px;
+}
+.app-header .app-action {
+  display: block;
+  color: #fff;
+  line-height: 36px;
+  width: 130px;
+  text-shadow: none;
+  border-radius: 0;
+  text-transform: uppercase;
+  background-color: #b3c833;
+  background-position: 0 0;
+  background-image: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  border: none;
+  border-color: none;
+  margin: 15px 0;
+}
+.app-title,
+.gallery-app-details .app-comments-header {
+  font-size: 28px;
+  font-family: "Roboto", Arial, sans-serif;
+  font-weight: 300;
+  margin-bottom: 5px;
+}
+.gallery-app-details .app-subtitle {
+  font-size: 16px;
+  margin: 5px 15px 5px 0;
+  display: inline;
+}
+.app-meta {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 15px;
+  text-decoration: none;
+  display: inline;
+  padding: 10px 10px 0 0;
+  color: #999;
+}
+.app-meta .gwt-Image { /* Mini meta images */
+  display: inline;
+  padding: 10px 5px 0 0;
+  width: 12px;
+  height: 12px;
+}
+.app-meta .gwt-Label {
+  display: inline;
+  padding-right: 5px;
+}
+.app-dates {
+  display: block;
+  margin: 5px 0 0;
+}
+.app-dates .gwt-Label {
+  display: inline-block;
+  margin: 0 15px 0 0;
+  color: #999;
+}
+.gallery-app-details .app-tags {
+  max-width: 100%;
+  display: block;
+  margin: 10px 0 0; 
+}
+.gallery-app-details .app-tags .gwt-Label {
+  display: inline-block;
+  background-color: #EEE;
+  color: #999;
+  padding: 2px 10px;
+  margin: 5px 8px 5px 0;
+}
+.gallery-app-details .app-tags .gwt-Label:hover {
+  background-color: #999;
+  color: #FFF;
+  -webkit-transition: background-color 1s ease; 
+  -moz-transition: background-color 1s ease; 
+  -o-transition: background-color 1s ease;
+  transition: background-color 1s ease; 	
+}
+.app-meta .note-header {
+  display: block;
+  font-weight: 900;
+}
+.app-meta .note-content {
+  display: block;
+  font-weight: 100;
+  margin-bottom: 15px;
+}
+.app-description {
+  margin: 15px 0 0;
+  color: #333;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+.gallery-app-details .app-comments-header {
+
+}
+.gallery-app-details .app-comments {
+  width: 100%;
+  font-weight: 300;
+} 
+.app-comments .comment-item {
+  margin: 10px 0;
+}
+.comment-item {
+  padding: 10px 0 0;
+}
+.comment-person {
+  float: left;
+  margin: 0 20px 0 0;
+  position: absolute;
+  height: 100%;
+}
+.comment-person .gwt-Image {
+  height: 48px;
+  width: 48px;
+}
+.comment-content {
+  padding-left: 68px; /* width of the left side + margin */
+}
+.comment-meta {
+  font-size: 12px;
+  margin: 0 0 5px;
+}
+.comment-meta .comment-author {
+  display: inline-block;
+  font-size: 14px;
+}
+.comment-meta .comment-date {
+  display: inline-block;
+  margin-left: 5px;
+  color: #999;
+}
+.comment-item .comment-text {
+  font-size: 14px;
+  font-weight: 300;
+}
+.clearfix:after { 
+   content: "."; 
+   visibility: hidden; 
+   display: block; 
+   height: 0; 
+   clear: both;
 }

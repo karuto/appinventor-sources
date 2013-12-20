@@ -30,8 +30,13 @@ public interface GalleryService extends RemoteService {
    */
   long publishApp(long projectId, String projectName, String title,
                          String description);
+
+  long updateApp(long galleryId, long projectId, String projectName, String title,
+                         String description);
+
+
   
-  void storeImage(InputStream is, long galleryId);
+//  void storeImage(InputStream is, long galleryId);
   
   /**
    * Deletes a new gallery app

@@ -5,6 +5,11 @@
 
 package com.google.appinventor.server;
 
+import com.google.appengine.api.files.AppEngineFile;
+import com.google.appengine.api.files.FileService;
+import com.google.appengine.api.files.FileServiceFactory;
+import com.google.appengine.api.files.FileWriteChannel;
+import com.google.appengine.api.files.GSFileOptions.GSFileOptionsBuilder;
 import com.google.appinventor.server.util.CacheHeaders;
 import com.google.appinventor.server.util.CacheHeadersImpl;
 import com.google.appinventor.shared.rpc.ServerLayout;
@@ -12,14 +17,22 @@ import com.google.appinventor.shared.rpc.UploadResponse;
 import com.google.appinventor.shared.rpc.project.GalleryService;
 import com.google.appinventor.shared.rpc.project.UserProject;
 
+import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,11 +43,12 @@ import javax.servlet.http.HttpServletResponse;
  *
  */
 public class GalleryServlet extends OdeServlet {
-
+  
+  private static int BUFFER_SIZE = 1024 * 1024 * 10;
 
   /*
    * URIs for upload requests are structured as follows:
-   *    /<baseurl>/gallery_servlet/<filePath>
+   *    /<baseurl>/gallery_servlet/galleryid/<filePath>
    */
 
   // Constants for accessing split URI
@@ -66,28 +80,75 @@ public class GalleryServlet extends OdeServlet {
     String uri = req.getRequestURI();
     // First, call split with no limit parameter.
     String[] uriComponents = uri.split("/");
-    
-    LOG.info("############# AT LEAST I GOT IN doPost ############");
-    
+        
     if (true) {
       long galleryId = Long.parseLong(uriComponents[GALLERY_ID_INDEX]);
       String fileName = uriComponents[FILE_PATH_INDEX];
-      LOG.info(String.valueOf(galleryId));
-      LOG.info(fileName);
       InputStream uploadedStream;
       try {
         uploadedStream = getRequestStream(req, ServerLayout.UPLOAD_FILE_FORM_ELEMENT);
-        String readableStream = convertStreamToString(uploadedStream);
-        LOG.info("################# TRYING UPLOAD STREAM ###############");
-        LOG.info(readableStream);
-        LOG.info("################# ENDING UPLOAD STREAM ###############");
         
-//        storeImage(uploadedStream, galleryId);
+        // Converts the input stream to byte array
+        byte[] buffer = new byte[8000];
+        int bytesRead = 0;
+        ByteArrayOutputStream bao = new ByteArrayOutputStream();        
+        while ((bytesRead = uploadedStream.read(buffer)) != -1) {
+          bao.write(buffer, 0, bytesRead); 
+        }
+        
+        // Set up the cloud file (options)
+        String key = galleryId + "/image";
+        FileService fileService = FileServiceFactory.getFileService();
+        
+        GSFileOptionsBuilder optionsBuilder = new GSFileOptionsBuilder()
+        .setBucket("galleryai2")
+        .setKey(key)
+        .setAcl("public-read")
+        .setMimeType("image/jpeg");
+        AppEngineFile writableFile = fileService.createNewGSFile(optionsBuilder.build());
+        
+        // Open a channel to write to it
+        boolean lock = true;
+        FileWriteChannel writeChannel =
+            fileService.openWriteChannel(writableFile, lock);
+        writeChannel.write(ByteBuffer.wrap(bao.toByteArray()));
+
+        /* GCS alternative way of uploading (create or replace)
+        private final GcsService gcsService = GcsServiceFactory.createGcsService(RetryParams.getDefaultInstance());
+        GcsFileOptions options = new GcsFileOptions.Builder()
+        .acl("public_read")
+        .build();
+        GcsFilename filename = new GcsFilename("galleryai2", key);
+        GcsOutputChannel outputChannel = 
+            gcsService.createOrReplace(filename, options);                 
+
+        // Copying InputStream to GcsOutputChannel
+        try {
+            copy(uploadedStream, Channels.newOutputStream(outputChannel));
+        } finally {
+            outputChannel.close();
+            uploadedStream.close();
+        }    
+        */
+                       
+        // Now finalize
+        bao.flush();
+        writeChannel.closeFinally();
+
+        uploadResponse = new UploadResponse(UploadResponse.Status.SUCCESS);
+        // Now, get the PrintWriter for the servlet response and print the UploadResponse.
+        // On the client side, in the onSubmitComplete method in ode/client/utils/Uploader.java, the
+        // UploadResponse value will be retrieved as a String via the
+        // FormSubmitCompleteEvent.getResults() method.
+        PrintWriter out = resp.getWriter();
+        out.print(uploadResponse.formatAsHtml());
         
       } catch (Exception e) {
         throw CrashReport.createAndLogError(LOG, req, null, e);
       }
-
+      // Set http response information
+      resp.setStatus(HttpServletResponse.SC_OK);
+      
     } else {
       throw CrashReport.createAndLogError(LOG, req, null,
           new IllegalArgumentException("Unknown upload kind: "));
@@ -103,13 +164,6 @@ public class GalleryServlet extends OdeServlet {
     // Set http response information
     resp.setStatus(HttpServletResponse.SC_OK);
   }
-
-  
-  // Helper method for InputStream
-  private static String convertStreamToString(InputStream is) {
-    java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-    return s.hasNext() ? s.next() : "";
-  }
   
   private InputStream getRequestStream(HttpServletRequest req, String expectedFieldName)
       throws Exception {
@@ -117,11 +171,11 @@ public class GalleryServlet extends OdeServlet {
     FileItemIterator iterator = upload.getItemIterator(req);
     while (iterator.hasNext()) {
       FileItemStream item = iterator.next();
+      LOG.info(item.getContentType());
       if (item.getFieldName().equals(expectedFieldName)) {
         return item.openStream();
       }
     }
-
     throw new IllegalArgumentException("Field " + expectedFieldName + " not found in upload");
   }
 
@@ -132,4 +186,19 @@ public class GalleryServlet extends OdeServlet {
     CACHE_HEADERS.setNotCacheable(resp);
     resp.setContentType(CONTENT_TYPE);
   }
+  
+  /**
+   * Helper method for converting input stream
+   * @param input
+   * @param output
+   * @throws IOException
+   */
+  private void copy(InputStream input, OutputStream output) throws IOException {
+    byte[] buffer = new byte[BUFFER_SIZE];
+    int bytesRead = input.read(buffer);
+    while (bytesRead != -1) {
+        output.write(buffer, 0, bytesRead);
+        bytesRead = input.read(buffer);
+    }
+}
 }

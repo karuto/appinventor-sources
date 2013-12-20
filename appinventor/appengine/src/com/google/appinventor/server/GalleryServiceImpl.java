@@ -86,6 +86,14 @@ public class GalleryServiceImpl extends OdeRemoteServiceServlet implements Galle
     storeAIA(galleryId,projectId, projectName);
     return galleryId;
   }
+  
+  @Override
+  public long updateApp(long galleryId, long projectId, String title, String projectName, String description) {
+    final String userId = userInfoProvider.getUserId();
+    galleryStorageIo.updateGalleryApp(galleryId, title, description,  userId);
+    //restoreAIA(galleryId,projectId, projectName);
+    return galleryId;
+  }
    /**
    * Returns an array of gallery Apps
    *
@@ -118,9 +126,9 @@ public class GalleryServiceImpl extends OdeRemoteServiceServlet implements Galle
     galleryStorageIo.incrementDownloads(galleryId);
   }
 
-  private void storeImage(InputStream is, long galleryId) {
-    
-  }
+//  public void storeImage(InputStream is, long galleryId) {
+//    
+//  }
   
   private void storeAIA(long galleryId, long projectId, String projectName) {
    
@@ -141,6 +149,9 @@ public class GalleryServiceImpl extends OdeRemoteServiceServlet implements Galle
     }
     // now stick the aia file into the gcs
     try {
+    // NOTE: WE NEED TO UPDATE THIS AS ITS USING A TOBEDEPRECATED VERSION OF GCS
+    //  see https://developers.google.com/appengine/docs/java/googlecloudstorageclient/migrate
+    //   for migration details
       // convert galleryId to a string, we'll use this for the key in gcs
       String galleryKey = String.valueOf(galleryId);
       LOG.log(Level.SEVERE, "GALLERYKEY IS "+galleryKey);    
